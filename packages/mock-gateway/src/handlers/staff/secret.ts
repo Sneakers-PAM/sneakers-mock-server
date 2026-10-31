@@ -132,6 +132,7 @@ const view = (s: MockSecret, userId: string) => ({
   heartbeatOptOut: s.heartbeatOptOut,
   id: s.id,
   lastAccessedAt: s.lastAccessedAt ?? null,
+  lastHeartbeatDetail: s.lastHeartbeatDetail ?? null,
   lastHeartbeatResult: s.lastHeartbeatResult ?? null,
   lastRotationResult: s.lastRotationResult ?? null,
   name: s.name,

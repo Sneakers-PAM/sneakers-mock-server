@@ -19,6 +19,7 @@ export interface MockComment {
 export interface MockConnection {
   description?: string;
   id: string;
+  kdcPort?: number;
   name: string;
   port?: number;
   protocol: string;
@@ -122,7 +123,8 @@ export interface MockSecret {
   heartbeatOptOut: boolean;
   id: string;
   lastAccessedAt?: string;
-  lastHeartbeatResult?: "failed" | "ok" | "unknown" | "unreachable";
+  lastHeartbeatDetail?: string;
+  lastHeartbeatResult?: "failed" | "ok" | "unknown" | "unreachable" | "untrustedCertificate";
   lastRotationResult?: "degraded" | "failed" | "ok" | "rotating" | "unknown";
   name: string;
   nextRotationAt?: string;
