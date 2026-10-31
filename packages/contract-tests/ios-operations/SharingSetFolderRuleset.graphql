@@ -1,0 +1,3 @@
+mutation SharingSetFolderRuleset($folderId: String!, $owners: [String!]!, $rules: [RaciRuleInput!]!) {
+  setFolderRuleset(folderId: $folderId, owners: $owners, rules: $rules) { folderId }
+}

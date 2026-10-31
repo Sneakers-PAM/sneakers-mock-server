@@ -1,0 +1,20 @@
+{
+  "name": "@sneakers-pam/gateway-client",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "license": "Apache-2.0",
+  "exports": {
+    ".": "./src/index.ts",
+    "./schema": "./src/generated/schemaSdl.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit -p ."
+  },
+  "dependencies": {
+    "@graphql-typed-document-node/core": "^3.2.0"
+  },
+  "devDependencies": {
+    "@sneakers-pam/vite-config": "*"
+  }
+}

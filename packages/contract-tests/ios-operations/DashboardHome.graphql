@@ -1,0 +1,5 @@
+query DashboardHome($userId: String!, $limit: Int) {
+  secretStats { total expiringSoon expired drift }
+  topAccessedSecrets(limit: $limit) { id name folderId viewCount lastAccessedAt }
+  activeLeasesForUser(userId: $userId) { id secretId userId issuedAt expiresAt returned }
+}

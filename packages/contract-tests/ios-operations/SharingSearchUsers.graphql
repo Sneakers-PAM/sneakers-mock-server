@@ -1,0 +1,1 @@
+query SharingSearchUsers($query: String!) { searchUsers(query: $query, limit: 8) { id name username } }

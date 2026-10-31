@@ -1,0 +1,3 @@
+mutation BrowseCreateFolder($parentId: String, $name: String!) {
+  createFolder(parentId: $parentId, name: $name) { id name parentId scope ownerUserId canManage subtreeSecretCount }
+}

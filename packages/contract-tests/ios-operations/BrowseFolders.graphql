@@ -1,0 +1,1 @@
+query BrowseFolders { folders { id name parentId scope ownerUserId canManage subtreeSecretCount } }

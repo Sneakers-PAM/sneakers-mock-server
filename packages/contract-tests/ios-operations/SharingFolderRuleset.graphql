@@ -1,0 +1,5 @@
+query SharingFolderRuleset($folderId: String!) {
+  folderRuleset(folderId: $folderId) {
+    folderId owners rules { id order subjectKind subjectName subjectId grants { action value } } inherited { fromFolderId fromFolderName rule { id order subjectKind subjectName subjectId grants { action value } } }
+  }
+}

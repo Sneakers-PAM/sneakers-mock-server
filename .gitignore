@@ -1,2 +1,12 @@
+node_modules/
+coverage/
+*.log
+.DS_Store
+.idea/
+.vscode/
+
 # Local design notes (non-tracked).
 .local/
+
+# the local CA and server certificate from npm run certs
+.certs/

@@ -1,0 +1,11 @@
+dist
+coverage
+node_modules
+.github
+package-lock.json
+.claude
+.certs
+CLAUDE.md
+packages/contract-tests/ios-operations
+packages/gateway-client/schema
+packages/gateway-client/src/generated

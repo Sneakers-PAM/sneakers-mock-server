@@ -1,0 +1,1 @@
+query RequestsPeople($ids: [String!]!) { resolveUserLabels(ids: $ids) { id name } }

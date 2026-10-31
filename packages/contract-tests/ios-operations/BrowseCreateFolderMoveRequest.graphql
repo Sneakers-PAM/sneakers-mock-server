@@ -1,0 +1,9 @@
+mutation BrowseCreateFolderMoveRequest(
+  $folderId: String!, $destParentId: String!, $reason: String, $folderName: String,
+  $destParentName: String
+) {
+  createFolderMoveRequest(
+    folderId: $folderId, destParentId: $destParentId, reason: $reason, folderName: $folderName,
+    destParentName: $destParentName
+  ) { id }
+}

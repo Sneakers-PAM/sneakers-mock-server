@@ -1,0 +1,69 @@
+fragment AuditRecordFields on AuditRecord {
+  seq
+  tier
+  action
+  actorUserId
+  actorName
+  subject
+  subjectKind
+  subjectId
+  subjectName
+  groupId
+  sensitive
+  attributes {
+    key
+    value
+  }
+  occurredAt
+  prevHash
+  hash
+}
+
+query AdminAudit($actorUserId: String, $subject: String, $excludeActions: [String!], $limit: Int) {
+  auditRecords(
+    actorUserId: $actorUserId
+    subject: $subject
+    excludeActions: $excludeActions
+    limit: $limit
+  ) {
+    ...AuditRecordFields
+  }
+  auditActions
+  auditChain {
+    valid
+    brokenAtSeq
+    length
+  }
+  users {
+    id
+    name
+    username
+  }
+  groups {
+    id
+    name
+  }
+}
+
+# Break-glass sessions for the audit page: one entered/left pair each, with the secrets
+# revealed in it.
+query AdminBreakGlassSessions($limit: Int) {
+  breakGlassSessions(limit: $limit) {
+    id
+    actorUserId
+    actorName
+    reason
+    openedAt
+    expiresAt
+    endedAt
+    endReason
+    reveals {
+      eventId
+      secretId
+      secretName
+      revealedAt
+      postRotationScheduled
+      ownerNotified
+    }
+  }
+}

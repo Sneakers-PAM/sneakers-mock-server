@@ -1,0 +1,1 @@
+mutation BrowseRenameFolder($id: ID!, $name: String!) { renameFolder(id: $id, name: $name) { id } }

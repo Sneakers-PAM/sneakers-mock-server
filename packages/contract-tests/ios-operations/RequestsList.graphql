@@ -1,0 +1,2 @@
+query RequestsList { approvalRequests { id kind secretId folderId folderName destParentId destParentName requestedByUserId requestedAt reason status
+resolvedAt resolvedByUserId resolvedByUserName comments { id authorUserId authorName body createdAt } } }

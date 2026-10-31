@@ -1,0 +1,1 @@
+query ApprovalsUsesToDecide { secretUsesToDecide { id secretName fieldKey state expiresAtUnix purpose requester requestedBy confirm runId reveal } }
