@@ -13,6 +13,9 @@
     "sneakers-mock-server": "bin/sneakers-mock-server.mjs"
   },
   "exports": {
+    "./in-process": "./packages/mock-gateway/src/index.ts",
+    "./in-process/edge": "./packages/mock-gateway/src/edge.server.ts",
+    "./in-process/testing": "./packages/mock-gateway/src/testing.ts",
     "./testing": "./packages/mock-gateway/src/pure.ts"
   },
   "workspaces": [

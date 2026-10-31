@@ -4,6 +4,10 @@ import { readFileSync } from "node:fs";
 
 import { WRONG_CODE } from "#mock/fixtures/users";
 import { MOCK_SERVER_PORT, startMockServer } from "#mock/server";
+import { mockState } from "#mock/state";
+
+// Start as a new install, to walk through first-run setup.
+if (process.env.MOCK_FRESH_INSTALL === "1") mockState.needsSetup = true;
 
 const httpsPort = process.env.HTTPS_PORT;
 const certificate = process.env.MOCK_TLS_CERT;

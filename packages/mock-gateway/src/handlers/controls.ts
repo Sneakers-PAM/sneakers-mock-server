@@ -55,6 +55,7 @@ const snapshot = () => ({
   secrets: world()
     .secrets.filter((s) => !s.retired)
     .map((s) => ({ held: held(s), id: s.id, name: s.name })),
+  sessionCookie: MOCK_SESSION_COOKIE,
   sessions: [...mockState.sessions.values()].map(({ userId }) => userId),
   startedAt,
   uses: world()
@@ -202,9 +203,15 @@ const fresh = (body: Body) => {
 const signIn = (body: Body) => {
   const user = userById(body.personId ?? "");
   if (!user || user.disabled) return bad("unknown_person", 404);
-  const { session, sid } = mintSession(user.id, body.stage !== "half");
-  if (body.stage !== "half") session.mfaVerifiedAt = Date.now();
-  return HttpResponse.json({ cookie: `${MOCK_SESSION_COOKIE}=${sid}`, csrfToken: session.csrf });
+  const enroll = !!user.mustEnroll && user.factors.length === 0;
+  const half = body.stage === "half" || (body.stage === undefined && enroll);
+  const { session, sid } = mintSession(user.id, !half);
+  if (!half) session.mfaVerifiedAt = Date.now();
+  return HttpResponse.json({
+    cookie: `${MOCK_SESSION_COOKIE}=${sid}`,
+    csrfToken: session.csrf,
+    enroll: half,
+  });
 };
 
 const KINDS: Record<string, (body: Body) => Response> = {

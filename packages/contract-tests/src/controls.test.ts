@@ -136,6 +136,26 @@ describe("the mock's controls", () => {
     expect((await gql(base, who, LIST)).status).toBe(200);
   });
 
+  it("sign-in with no stage says when the person must enrol", async () => {
+    const people = (await (await fetch(`${base}/_mock/people`)).json()) as {
+      id: string;
+      note: string;
+    }[];
+    const enrolling = people.find((p) => p.note === "must enrol");
+    const half = await control(base, { kind: "sign-in", personId: enrolling?.id });
+    expect(half.body.enroll).toBe(true);
+    const full = await control(base, { kind: "sign-in", personId: "mock-user-bob" });
+    expect(full.body.enroll).toBe(false);
+  });
+
+  it("names the session cookie it hands out", async () => {
+    const { body } = await control(base, { kind: "sign-in", personId: "mock-user-bob" });
+    const state = (await (await fetch(`${base}/_mock/controls`)).json()) as {
+      sessionCookie: string;
+    };
+    expect(String(body.cookie).startsWith(`${state.sessionCookie}=`)).toBe(true);
+  });
+
   it("refuses a kind it doesn't know", async () => {
     expect((await control(base, { kind: "nope" })).status).toBe(400);
   });
