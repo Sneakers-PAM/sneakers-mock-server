@@ -16,8 +16,11 @@ follows the proposal in Sneakers-PAM/sneakers-gateway#143, which hasn't shipped.
 
 ## Using sneakers-mock-server
 
-- Clients reach the mock over HTTP only. The one import is `@sneakers-pam/mock-server/testing`
-  (`packages/mock-gateway/src/pure.ts`): the seeded people, as pure code. Keep it free of state.
+- Clients reach the mock over HTTP. `@sneakers-pam/mock-server/testing`
+  (`packages/mock-gateway/src/pure.ts`) is the seeded people as pure code; keep it free of state.
+- One exception: sneakers-web's unit tests change mock state directly, so they import
+  `@sneakers-pam/mock-server/in-process` and `/in-process/testing`, pinned to a commit. These run
+  TypeScript sources, so the importer aliases `#mock`, `#gw` and `@sneakers-pam/gateway-client`.
 - The standalone server uses the live session cookie, `sneakers_sid`. `MOCK_SESSION_COOKIE`
   overrides it; in-process tests keep the `mock_` name.
 - Every control kind is in the README's Controls table. Keep the table, the `/_mock` page and

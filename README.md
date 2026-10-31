@@ -90,19 +90,19 @@ The `/_mock` page has the controls people use by hand. All of them are available
 and scripts: `POST /_mock/controls` with a JSON body of `{ "kind": ..., ... }`. Each answers with the
 controls' current state, the same as `GET /_mock/controls`, plus `created` where it makes something.
 
-| Kind             | Body                                                          | What it does                                                                                |
-| ---------------- | ------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
-| `add-secret`     | `name`, optional `folderId`, `typeId`, `username`, `password` | Adds a secret                                                                               |
-| `add-request`    | optional `secretId`, `personId`, `reason`                     | Adds a pending access request, from Bob by default                                          |
-| `decide-request` | `id`, optional `approve`, `personId`                          | Approves a pending request, or denies it with `approve: false`, without the approver checks |
-| `hold-reveal`    | optional `secretId`, `on`                                     | Holds every reveal of a secret for approval; `on: false` stops                              |
-| `add-use`        | optional `secretId`, `personId`, `fieldKey`, `reason`         | Adds a held reveal from someone else, for the signed-in owner to decide                     |
-| `decide-use`     | optional `id`, `approve`                                      | Approves a held reveal (the newest by default), or denies it with `approve: false`          |
-| `expire-session` | optional `personId`                                           | Ends that person's sessions, or everyone's; the next call answers 401                       |
-| `fail-next`      | optional `mode`, `status`                                     | Fails the next API call: a GraphQL error, or `mode: "http"` with `status` (503 by default)  |
-| `reset`          |                                                               | Puts the sample data back; everyone stays signed in                                         |
-| `fresh`          | optional `firstRun`                                           | Back to first boot: everyone is signed out, and `firstRun` walks first-run setup            |
-| `sign-in`        | `personId`, optional `stage` (`full` or `half`)               | Answers `{ "cookie": ..., "csrfToken": ... }` for that person                               |
+| Kind             | Body                                                          | What it does                                                                                  |
+| ---------------- | ------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| `add-secret`     | `name`, optional `folderId`, `typeId`, `username`, `password` | Adds a secret                                                                                 |
+| `add-request`    | optional `secretId`, `personId`, `reason`                     | Adds a pending access request, from Bob by default                                            |
+| `decide-request` | `id`, optional `approve`, `personId`                          | Approves a pending request, or denies it with `approve: false`, without the approver checks   |
+| `hold-reveal`    | optional `secretId`, `on`                                     | Holds every reveal of a secret for approval; `on: false` stops                                |
+| `add-use`        | optional `secretId`, `personId`, `fieldKey`, `reason`         | Adds a held reveal from someone else, for the signed-in owner to decide                       |
+| `decide-use`     | optional `id`, `approve`                                      | Approves a held reveal (the newest by default), or denies it with `approve: false`            |
+| `expire-session` | optional `personId`                                           | Ends that person's sessions, or everyone's; the next call answers 401                         |
+| `fail-next`      | optional `mode`, `status`                                     | Fails the next API call: a GraphQL error, or `mode: "http"` with `status` (503 by default)    |
+| `reset`          |                                                               | Puts the sample data back; everyone stays signed in                                           |
+| `fresh`          | optional `firstRun`                                           | Back to first boot: everyone is signed out, and `firstRun` walks first-run setup              |
+| `sign-in`        | `personId`, optional `stage` (`full` or `half`)               | Answers `{ "cookie", "csrfToken", "enroll" }`; with no `stage`, half if they must enrol first |
 
 `GET /_mock/state` returns the whole mock state as JSON, so tests can check what a call changed.
 `GET /_mock/people` lists the cast. The health probes never fail, whatever `fail-next` armed.
