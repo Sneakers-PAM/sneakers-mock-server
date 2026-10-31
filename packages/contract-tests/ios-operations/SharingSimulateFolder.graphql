@@ -1,0 +1,3 @@
+query SharingSimulateFolder($folderId: String!, $userId: String!, $draftRules: [RaciRuleInput!]!) {
+  simulateFolder(folderId: $folderId, userId: $userId, draftRules: $draftRules) { read readReason reveal revealReason manage manageReason approve approveReason informed informedReason }
+}

@@ -1,0 +1,3 @@
+mutation RequestsResolve($id: ID!, $approve: Boolean!, $grantHours: Int) {
+  resolveApproval(id: $id, approve: $approve, grantHours: $grantHours) { id }
+}

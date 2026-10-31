@@ -1,0 +1,3 @@
+mutation BrowseMoveFolder($id: ID!, $newParentId: String) {
+  moveFolder(id: $id, newParentId: $newParentId) { id }
+}

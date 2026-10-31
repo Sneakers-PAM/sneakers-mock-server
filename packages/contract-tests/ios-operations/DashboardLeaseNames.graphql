@@ -1,0 +1,1 @@
+query DashboardLeaseNames($a0: ID!) { l0: secret(id: $a0) { id name } }

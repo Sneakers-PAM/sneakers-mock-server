@@ -1,0 +1,3 @@
+mutation ApprovalsDecideUse($id: ID!, $approve: Boolean!) {
+  decideSecretUse(id: $id, approve: $approve) { id state }
+}

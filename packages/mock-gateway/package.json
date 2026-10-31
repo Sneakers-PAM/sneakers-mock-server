@@ -1,0 +1,29 @@
+{
+  "name": "@sneakers-pam/mock-gateway",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "license": "Apache-2.0",
+  "exports": {
+    ".": "./src/index.ts",
+    "./edge.server": "./src/edge.server.ts",
+    "./testing": "./src/testing.ts",
+    "./server": "./src/server.ts"
+  },
+  "dependencies": {
+    "msw": "^3.0.1",
+    "@sneakers-pam/gateway-client": "*",
+    "graphql": "^17.0.2"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit -p .",
+    "serve": "vite-node --config serve.config.ts src/serve.ts"
+  },
+  "devDependencies": {
+    "@sneakers-pam/vite-config": "*",
+    "vite-node": "3.2.4"
+  },
+  "imports": {
+    "#mock/*": "./src/*.ts"
+  }
+}

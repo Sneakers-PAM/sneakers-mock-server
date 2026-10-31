@@ -1,0 +1,3 @@
+mutation RequestsCreate($secretId: String!, $reason: String) {
+  createAccessRequest(secretId: $secretId, reason: $reason) { id }
+}

@@ -1,0 +1,3 @@
+mutation CheckoutsCheckout($secretId: String!, $hours: Int) {
+  checkoutSecret(secretId: $secretId, hours: $hours) { id secretId userId issuedAt expiresAt returned }
+}

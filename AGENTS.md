@@ -5,36 +5,44 @@ hook-enforced rules). Keep this file current when the build, layout, or public A
 
 ## What this is
 
-Standalone in-memory mock of the whole Sneakers gateway API, shared by web, iOS and Android
+One in-memory server that answers the whole Sneakers gateway API on its real wire protocol: GraphQL
+at `/graphql`, the sign-in routes under `/auth`, the probes (`/livez`, `/healthz`) and the OAuth
+routes for native sign-in. The data is seeded, invented and resettable. Web, iOS and Android point
+at one server. Its own controls page is `/_mock`, and the same controls are `POST /_mock/controls`.
 
-<!-- Fill in: what the project does, what it ships (library, service, action, CLI), and the one or
-two things an agent must understand before changing it. -->
+The mock follows the gateway, not the screens. One thing is ahead of it on purpose: native sign-in
+follows the proposal in Sneakers-PAM/sneakers-gateway#143, which hasn't shipped. When it does,
+`handlers/nativeSignIn.ts` moves to match.
 
 ## Using sneakers-mock-server
 
-<!-- If this project is consumed by others (a library/plugin/action), describe the contract a
-consumer must respect: the single entry point, the public surface, required options, and anything
-that must not be bypassed. Delete this section for a leaf application. -->
+- Clients reach the mock over HTTP only. The one import is `@sneakers-pam/mock-server/testing`
+  (`packages/mock-gateway/src/pure.ts`): the seeded people, as pure code. Keep it free of state.
+- The standalone server uses the live session cookie, `sneakers_sid`. `MOCK_SESSION_COOKIE`
+  overrides it; in-process tests keep the `mock_` name.
+- Every control kind is in the README's Controls table. Keep the table, the `/_mock` page and
+  `handlers/controls.ts` in step.
 
 ## Layout
 
-<!-- The directories that matter and what lives in each. Keep it short; point at the entry points. -->
-
-- `src/` - <what>
-- `<tests dir>/` - <what>
+- `bin/sneakers-mock-server.mjs` - the entry point; starts `src/serve.ts` under vite-node.
+- `packages/mock-gateway/` - the mock: handlers (`src/handlers/`, `src/admin/`), fixtures
+  (`src/fixtures/`), the state (`src/state.ts`), the network server (`src/server.ts`), the controls
+  (`handlers/controls.ts`, `handlers/page.ts`), the iOS-only operations (`handlers/ios.ts`).
+- `packages/gateway-client/` - the typed client, the schema copied from sneakers-gateway (`schema/`)
+  and what's generated from it (`src/generated/`).
+- `packages/contract-tests/` - tests over HTTP. `ios-operations/` holds every operation the iOS app
+  sends, extracted from its source at the ref in `schema-refs.env`.
+- `packages/vite-config/` - the Vitest config the packages share.
+- `scripts/` - `schema-copy.sh`, `schema-generate.sh`, `ios-operations.mjs`, `dev-cert.sh`.
 
 ## Build, test, lint
 
-<!-- The exact commands. Pull these from package.json scripts (npm), the Taskfile (Go/Task), or
-pyproject (Python) so they stay accurate. -->
-
-- Build: `<command>`
-- Test: `<command>` (note any service/fixture the integration tests require)
-- Lint: `<command>`
-- Package checks (npm packages), after a build: `npm run check:pack` (contents and ceiling),
-  `npm run check:pack:growth` (growth against the last release), `npm run check:install`
-  (install the tarball, import ESM and CJS); see CLAUDE.md "npm package contents"
-- License headers / docs: `<command>`
+- Run: `npm start` (http on 5171), `npm run start:https` (adds https on 5443).
+- Test: `npm test`. Lint: `npm run lint`, `npm run format:check`, `npm run typecheck`.
+- Schema: bump `SNEAKERS_GATEWAY_REF`, then `npm run schema:copy && npm run schema:generate`.
+- iOS operations: bump `SNEAKERS_IOS_REF`, then `npm run ios:operations`, and add a case to
+  `ios.test.ts` for anything new.
 
 ## Logging
 
@@ -56,4 +64,13 @@ Follow the logging rules in `CLAUDE.md`. In short:
   `.claude/hooks` (run `bash .claude/hooks/install.sh` once per clone).
 - Open every PR as a draft. CI skips drafts, so run the full checks locally, push once they pass,
   and mark the PR ready when the work is finished; see CLAUDE.md "CI and Actions minutes".
-- <project-specific conventions, non-obvious constraints, and traps an agent should know>
+- Never test against a mock someone is reviewing with: start your own with `--port 0`. Its controls
+  reset and sign people out.
+- 5170 is Brigade's mock, so this one defaults to 5171.
+- The server binds to loopback unless `HOST` says otherwise, because the controls have no sign-in.
+- A handler's answer may carry extra fields for web and iOS at once, since each ignores what it
+  didn't select, unless a web test pins the exact answer. Then branch in `handlers/ios.ts`.
+- Web's and iOS's operations share names. MSW matches by name, so `handlers/ios.ts` runs first and
+  returns nothing to pass a request on to web's handler.
+- Prettier never touches `schema/`, `ios-operations/`, `src/generated/` or the governance files:
+  the copies must stay byte-exact. See `.prettierignore`.

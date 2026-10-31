@@ -1,0 +1,3 @@
+mutation RequestsComment($requestId: String!, $body: String!) {
+  addApprovalComment(requestId: $requestId, body: $body) { id }
+}

@@ -2,8 +2,7 @@
 # Ignore everything
 *
 
-# But inject license into Go, proto, SQL and Swift sources...
+# But inject license into Go, proto and SQL sources...
 !*.go
 !*.proto
 !*.sql
-!*.swift

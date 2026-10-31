@@ -1,0 +1,62 @@
+{
+  "name": "@sneakers-pam/mock-server",
+  "version": "0.0.0",
+  "description": "Standalone in-memory mock of the whole Sneakers gateway API, shared by web, iOS and Android",
+  "author": "The Sneakers-PAM Authors",
+  "license": "Apache-2.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
+  "bin": {
+    "sneakers-mock-server": "bin/sneakers-mock-server.mjs"
+  },
+  "exports": {
+    "./testing": "./packages/mock-gateway/src/pure.ts"
+  },
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "start": "node bin/sneakers-mock-server.mjs",
+    "start:https": "bash scripts/dev-cert.sh && node bin/sneakers-mock-server.mjs --https-port 5443",
+    "certs": "bash scripts/dev-cert.sh",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "schema:copy": "bash scripts/schema-copy.sh",
+    "schema:generate": "bash scripts/schema-generate.sh",
+    "ios:operations": "node scripts/ios-operations.mjs"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Sneakers-PAM/sneakers-mock-server.git"
+  },
+  "homepage": "https://github.com/Sneakers-PAM/sneakers-mock-server#readme",
+  "bugs": {
+    "url": "https://github.com/Sneakers-PAM/sneakers-mock-server/issues"
+  },
+  "dependencies": {
+    "graphql": "^17.0.2",
+    "msw": "^3.0.1",
+    "vite": "^8.3.2",
+    "vite-node": "3.2.4"
+  },
+  "devDependencies": {
+    "@graphql-codegen/cli": "^7.4.3",
+    "@graphql-codegen/client-preset": "^6.2.0",
+    "@graphql-codegen/typescript": "^6.1.0",
+    "@graphql-codegen/typescript-operations": "^6.1.9",
+    "@the-rabbit-hole/eslint-config": "^0.7.0",
+    "@types/node": "^26.6.4",
+    "eslint": "^10.11.0",
+    "prettier": "3.9.4",
+    "typescript": "~6.0",
+    "vitest": "^5.0.3"
+  }
+}

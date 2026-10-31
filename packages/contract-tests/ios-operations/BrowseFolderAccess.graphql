@@ -1,0 +1,3 @@
+query BrowseFolderAccess($folderId: String!) {
+  myFolderAccess(folderId: $folderId) { read reveal manage approve informed manageRuleset }
+}
