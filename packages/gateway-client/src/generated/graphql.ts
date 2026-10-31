@@ -12,6 +12,7 @@ export type ComponentStatus = "NOT_CONFIGURED" | "OK" | "UNAVAILABLE";
 export type ConnectionInput = {
   description?: string | null | undefined;
   id?: string | null | undefined;
+  kdcPort?: number | null | undefined;
   name: string;
   port?: number | null | undefined;
   protocol: string;
@@ -47,7 +48,13 @@ export type FieldMappingInput = {
 export type FolderScope = "group" | "personal" | "role";
 
 export type HeartbeatResult =
-  "failed" | "hostKeyMismatch" | "hostKeyNotPinned" | "ok" | "unknown" | "unreachable";
+  | "failed"
+  | "hostKeyMismatch"
+  | "hostKeyNotPinned"
+  | "ok"
+  | "unknown"
+  | "unreachable"
+  | "untrustedCertificate";
 
 export type KeyValueInput = {
   key: string;
@@ -760,7 +767,7 @@ export type AdminFolderRulesetQuery = {
     inheritedOwners: Array<{ userId: string; fromFolderId: string; fromFolderName: string }>;
   };
   groups: Array<{ id: string; name: string }>;
-  users: Array<{ id: string; name: string }>;
+  users: Array<{ id: string; name: string; username: string; email: string }>;
 };
 
 export type AdminSetFolderRulesetMutationVariables = Exact<{
@@ -777,6 +784,7 @@ export type ConnectionFieldsFragment = {
   protocol: string;
   port: number | null;
   useTls: boolean | null;
+  kdcPort: number | null;
   description: string | null;
   targetCount: number;
 };
@@ -804,6 +812,7 @@ export type AdminConnectionsQuery = {
     protocol: string;
     port: number | null;
     useTls: boolean | null;
+    kdcPort: number | null;
     description: string | null;
     targetCount: number;
   }>;
@@ -821,6 +830,7 @@ export type AdminSaveConnectionMutation = {
     protocol: string;
     port: number | null;
     useTls: boolean | null;
+    kdcPort: number | null;
     description: string | null;
     targetCount: number;
   };
@@ -2234,6 +2244,7 @@ export type SecretDetailFieldsFragment = {
   creatorPrincipalId: string | null;
   expiresAt: string | null;
   lastHeartbeatResult: HeartbeatResult | null;
+  lastHeartbeatDetail: string | null;
   verifiedAt: string | null;
   viewCount: number | null;
   lastAccessedAt: string | null;
@@ -2280,6 +2291,7 @@ export type SecretDetailQuery = {
     creatorPrincipalId: string | null;
     expiresAt: string | null;
     lastHeartbeatResult: HeartbeatResult | null;
+    lastHeartbeatDetail: string | null;
     verifiedAt: string | null;
     viewCount: number | null;
     lastAccessedAt: string | null;
@@ -2409,6 +2421,7 @@ export type SecretRestoreVersionMutation = {
     creatorPrincipalId: string | null;
     expiresAt: string | null;
     lastHeartbeatResult: HeartbeatResult | null;
+    lastHeartbeatDetail: string | null;
     verifiedAt: string | null;
     viewCount: number | null;
     lastAccessedAt: string | null;
@@ -2459,6 +2472,7 @@ export type SecretSetAutomationMutation = {
     creatorPrincipalId: string | null;
     expiresAt: string | null;
     lastHeartbeatResult: HeartbeatResult | null;
+    lastHeartbeatDetail: string | null;
     verifiedAt: string | null;
     viewCount: number | null;
     lastAccessedAt: string | null;
@@ -2494,6 +2508,7 @@ export type SecretSetTokenApprovalMutation = {
     creatorPrincipalId: string | null;
     expiresAt: string | null;
     lastHeartbeatResult: HeartbeatResult | null;
+    lastHeartbeatDetail: string | null;
     verifiedAt: string | null;
     viewCount: number | null;
     lastAccessedAt: string | null;
@@ -2527,6 +2542,7 @@ export type SecretRetireMutation = {
     creatorPrincipalId: string | null;
     expiresAt: string | null;
     lastHeartbeatResult: HeartbeatResult | null;
+    lastHeartbeatDetail: string | null;
     verifiedAt: string | null;
     viewCount: number | null;
     lastAccessedAt: string | null;
@@ -2560,6 +2576,7 @@ export type SecretRestoreMutation = {
     creatorPrincipalId: string | null;
     expiresAt: string | null;
     lastHeartbeatResult: HeartbeatResult | null;
+    lastHeartbeatDetail: string | null;
     verifiedAt: string | null;
     viewCount: number | null;
     lastAccessedAt: string | null;
@@ -2600,6 +2617,7 @@ export type SecretAttachTargetMutation = {
     creatorPrincipalId: string | null;
     expiresAt: string | null;
     lastHeartbeatResult: HeartbeatResult | null;
+    lastHeartbeatDetail: string | null;
     verifiedAt: string | null;
     viewCount: number | null;
     lastAccessedAt: string | null;
@@ -2634,6 +2652,7 @@ export type SecretDetachTargetMutation = {
     creatorPrincipalId: string | null;
     expiresAt: string | null;
     lastHeartbeatResult: HeartbeatResult | null;
+    lastHeartbeatDetail: string | null;
     verifiedAt: string | null;
     viewCount: number | null;
     lastAccessedAt: string | null;
@@ -2682,6 +2701,7 @@ export type SecretReplaceCertificateMutation = {
       creatorPrincipalId: string | null;
       expiresAt: string | null;
       lastHeartbeatResult: HeartbeatResult | null;
+      lastHeartbeatDetail: string | null;
       verifiedAt: string | null;
       viewCount: number | null;
       lastAccessedAt: string | null;
@@ -3249,6 +3269,7 @@ export const ConnectionFieldsFragmentDoc = new TypedDocumentString(
   protocol
   port
   useTls
+  kdcPort
   description
   targetCount
 }
@@ -3513,6 +3534,7 @@ export const SecretDetailFieldsFragmentDoc = new TypedDocumentString(
   creatorPrincipalId
   expiresAt
   lastHeartbeatResult
+  lastHeartbeatDetail
   verifiedAt
   viewCount
   lastAccessedAt
@@ -4212,6 +4234,8 @@ export const AdminFolderRulesetDocument = new TypedDocumentString(`
   users {
     id
     name
+    username
+    email
   }
 }
     fragment AdminRaciRuleFields on RaciRule {
@@ -4251,6 +4275,7 @@ export const AdminConnectionsDocument = new TypedDocumentString(`
   protocol
   port
   useTls
+  kdcPort
   description
   targetCount
 }`) as unknown as TypedDocumentString<AdminConnectionsQuery, AdminConnectionsQueryVariables>;
@@ -4266,6 +4291,7 @@ export const AdminSaveConnectionDocument = new TypedDocumentString(`
   protocol
   port
   useTls
+  kdcPort
   description
   targetCount
 }`) as unknown as TypedDocumentString<
@@ -5750,6 +5776,7 @@ export const SecretDetailDocument = new TypedDocumentString(`
   creatorPrincipalId
   expiresAt
   lastHeartbeatResult
+  lastHeartbeatDetail
   verifiedAt
   viewCount
   lastAccessedAt
@@ -5854,6 +5881,7 @@ export const SecretRestoreVersionDocument = new TypedDocumentString(`
   creatorPrincipalId
   expiresAt
   lastHeartbeatResult
+  lastHeartbeatDetail
   verifiedAt
   viewCount
   lastAccessedAt
@@ -5914,6 +5942,7 @@ export const SecretSetAutomationDocument = new TypedDocumentString(`
   creatorPrincipalId
   expiresAt
   lastHeartbeatResult
+  lastHeartbeatDetail
   verifiedAt
   viewCount
   lastAccessedAt
@@ -5953,6 +5982,7 @@ export const SecretSetTokenApprovalDocument = new TypedDocumentString(`
   creatorPrincipalId
   expiresAt
   lastHeartbeatResult
+  lastHeartbeatDetail
   verifiedAt
   viewCount
   lastAccessedAt
@@ -5988,6 +6018,7 @@ export const SecretRetireDocument = new TypedDocumentString(`
   creatorPrincipalId
   expiresAt
   lastHeartbeatResult
+  lastHeartbeatDetail
   verifiedAt
   viewCount
   lastAccessedAt
@@ -6020,6 +6051,7 @@ export const SecretRestoreDocument = new TypedDocumentString(`
   creatorPrincipalId
   expiresAt
   lastHeartbeatResult
+  lastHeartbeatDetail
   verifiedAt
   viewCount
   lastAccessedAt
@@ -6057,6 +6089,7 @@ export const SecretAttachTargetDocument = new TypedDocumentString(`
   creatorPrincipalId
   expiresAt
   lastHeartbeatResult
+  lastHeartbeatDetail
   verifiedAt
   viewCount
   lastAccessedAt
@@ -6092,6 +6125,7 @@ export const SecretDetachTargetDocument = new TypedDocumentString(`
   creatorPrincipalId
   expiresAt
   lastHeartbeatResult
+  lastHeartbeatDetail
   verifiedAt
   viewCount
   lastAccessedAt
@@ -6154,6 +6188,7 @@ export const SecretReplaceCertificateDocument = new TypedDocumentString(`
   creatorPrincipalId
   expiresAt
   lastHeartbeatResult
+  lastHeartbeatDetail
   verifiedAt
   viewCount
   lastAccessedAt
