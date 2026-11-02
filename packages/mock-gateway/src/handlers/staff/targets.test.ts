@@ -136,12 +136,23 @@ describe("staff targets in the mock", () => {
     ).toEqual({ code: "NOT_FOUND", reason: undefined });
   });
 
-  it("lets only a site admin change host-key pins", async () => {
-    const gw8 = await as(BOB);
+  // sneakers-web#318: the owner of a personal target pins its keys; a shared target's stay
+  // with a site admin.
+  it("lets the owner of a personal target, or a site admin, change host-key pins", async () => {
+    const bob = await as(BOB);
+    const pin = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMock x";
+    const { saveTarget } = await bob.gql(TargetsSaveDocument, {
+      input: input({ sshHostKeys: [pin] }),
+    });
+    expect(saveTarget).toMatchObject({ ownerUserId: BOB, sshHostKeys: [pin] });
+    const { saveTarget: cleared } = await bob.gql(TargetsSaveDocument, {
+      input: input({ id: saveTarget.id, sshHostKeys: [] }),
+    });
+    expect(cleared.sshHostKeys).toEqual([]);
     expect(
       await refused(
-        gw8.gql(TargetsSaveDocument, {
-          input: input({ sshHostKeys: ["ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMock x"] }),
+        bob.gql(TargetsSaveDocument, {
+          input: input({ id: "mock-target-edge-router", sshHostKeys: [] }),
         }),
       ),
     ).toEqual({ code: "PERMISSION_DENIED", reason: undefined });
@@ -171,6 +182,9 @@ describe("the SSH terminal in the mock", () => {
     const gw = await as(ALICE);
     const d = await gw.gql(TargetsTerminalDocument, { id: BUILD_KEY });
     expect(d.secret).toMatchObject({ canRead: true, targetId: "mock-target-build1" });
+    // sneakers-web#318: the owner tells the page who may pin an unpinned target.
+    expect(d.targets.find((t) => t.id === "mock-target-build1")?.ownerUserId).toBe(ALICE);
+    expect(d.targets.find((t) => t.id === "mock-target-edge-router")?.ownerUserId).toBeNull();
     const f = await gw.gql(TargetsTerminalFieldsDocument, { id: BUILD_KEY });
     expect(Object.fromEntries(f.secretFields.map((x) => [x.key, x.value]))).toEqual({
       keyFormat: "OpenSSH",
@@ -267,14 +281,44 @@ describe("trust-on-first-use host-key pinning in the mock", () => {
     expect(world().targets.find((t) => t.id === BUILD)!.sshHostKeys).toEqual(before);
   });
 
-  it("refuses a non-admin, and a target with no SSH connection", async () => {
+  it("says which address it dialled, brackets and all for IPv6", async () => {
+    const alice = await as(ALICE);
+    const scan = await alice.gql(TargetsScanHostKeyDocument, { targetId: BUILD });
+    expect(scan.scanTargetHostKey.address).toBe("build1.example.org:22");
+    world().targets.find((t) => t.id === BUILD)!.hostname = "2001:db8::10";
+    const v6 = await alice.gql(TargetsScanHostKeyDocument, { targetId: BUILD });
+    expect(v6.scanTargetHostKey.address).toBe("[2001:db8::10]:22");
+  });
+
+  // sneakers-web#318: a person who isn't a site admin scans and pins their own personal target.
+  it("lets the owner of a personal target scan and pin it", async () => {
+    bobsTarget();
+    const bob = await as(BOB);
+    const scan = await bob.gql(TargetsScanHostKeyDocument, { targetId: "mock-target-bob-nas" });
+    expect(scan.scanTargetHostKey).toMatchObject({ address: "192.0.2.20:22", pinned: false });
+    const { pinTargetHostKey } = await bob.gql(TargetsPinHostKeyDocument, {
+      fingerprint: scan.scanTargetHostKey.fingerprint,
+      targetId: "mock-target-bob-nas",
+    });
+    expect(pinTargetHostKey.sshHostKeys).toHaveLength(1);
+  });
+
+  it("refuses a non-admin on a shared target, and a target with no SSH connection", async () => {
     const bob = await as(BOB);
     expect(
       await refused(bob.gql(TargetsScanHostKeyDocument, { targetId: "mock-target-edge-router" })),
     ).toEqual({
       code: "PERMISSION_DENIED",
-      reason: undefined,
+      reason: "HOST_KEY_PIN_NOT_OWNER",
     });
+    expect(
+      await refused(
+        bob.gql(TargetsPinHostKeyDocument, {
+          fingerprint: "SHA256:any",
+          targetId: "mock-target-edge-router",
+        }),
+      ),
+    ).toEqual({ code: "PERMISSION_DENIED", reason: "HOST_KEY_PIN_NOT_OWNER" });
     const alice = await as(ALICE);
     expect(
       await refused(alice.gql(TargetsScanHostKeyDocument, { targetId: "mock-target-dc1" })),

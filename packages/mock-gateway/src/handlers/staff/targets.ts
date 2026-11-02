@@ -29,8 +29,9 @@ import { mockState, newToken } from "#mock/state";
 /*
  * Staff targets and the SSH terminal, answered the way the vault and gateway do: a user sees
  * shared targets and their own personal ones (a site admin sees all), creates personal ones (a
- * site admin's are shared), and edits or deletes only their own unless a site admin. Only a
- * site admin changes host-key pins.
+ * site admin's are shared), and edits or deletes only their own unless a site admin. Host-key
+ * pins follow the same rule: the owner of a personal target, or a site admin for any target
+ * (sneakers-web#318).
  */
 
 const SSH_KEY_TYPE = "type-ssh-key";
@@ -110,12 +111,17 @@ const connectionView = (c: MockConnection) => ({
 
 const blank = (v: null | string | undefined) => (v?.trim() ? v.trim() : undefined);
 
-const sameList = (a: string[], b: string[]) =>
-  a.length === b.length && a.every((v, index) => v === b[index]);
-
 const noEdit = () => refusal("PERMISSION_DENIED", "not permitted to edit this target");
-const noPins = () =>
-  refusal("PERMISSION_DENIED", "only a site admin may change a target's SSH host keys");
+const noPin = () =>
+  refusal(
+    "PERMISSION_DENIED",
+    "SSH host keys on a personal target are pinned by its owner, and on a shared target by a site admin.",
+    "HOST_KEY_PIN_NOT_OWNER",
+  );
+
+/** host:port as the gateway reports the address it dialled, an IPv6 address in brackets. */
+const addressOf = (hostname: string, port: number) =>
+  `${hostname.includes(":") ? `[${hostname}]` : hostname}:${port}`;
 
 const protocolOf = (connectionId: string) =>
   world().connections.find((c) => c.id === connectionId)?.protocol;
@@ -210,8 +216,9 @@ export const targetsHandlers: RequestHandler[] = [
       const existing = input.id ? world().targets.find((t) => t.id === input.id) : undefined;
       if (input.id && !existing) return refusal("NOT_FOUND", "target not found");
       if (existing && !canEdit(userId, existing)) return noEdit();
+      // Every save that gets here is by the target's owner or a site admin (a new target is the
+      // saver's own), the people the vault lets change pins.
       const pins = input.sshHostKeys ?? existing?.sshHostKeys ?? [];
-      if (!admin && !sameList(pins, existing?.sshHostKeys ?? [])) return noPins();
       const saved: MockTarget = {
         connectionId: connections.find((c) => c.isDefault)!.connectionId,
         connections,
@@ -289,6 +296,7 @@ export const targetsHandlers: RequestHandler[] = [
             hostname: t.hostname,
             id: t.id,
             name: t.name,
+            ownerUserId: t.ownerUserId ?? null,
             sshHostKeys: t.sshHostKeys,
           })),
       });
@@ -326,13 +334,15 @@ export const targetsHandlers: RequestHandler[] = [
     asUser(request, (userId) => {
       const t = world().targets.find((x) => x.id === variables.targetId && visible(userId, x));
       if (!t) return refusal("NOT_FOUND", "target not found");
-      if (!isSiteAdmin(userId)) return noPins();
-      if (!sshConnectionIdOf(t))
-        return refusal("FAILED_PRECONDITION", "target has no SSH connection");
+      if (!canEdit(userId, t)) return noPin();
+      const sshConnectionId = sshConnectionIdOf(t);
+      if (!sshConnectionId) return refusal("FAILED_PRECONDITION", "target has no SSH connection");
+      const port = world().connections.find((c) => c.id === sshConnectionId)?.port ?? 22;
       const line = offeredKeyLine(t);
       const { keyType, publicKey } = parseKeyLine(line);
       return ok({
         scanTargetHostKey: {
+          address: addressOf(t.hostname, port),
           fingerprint: fingerprintOf(line),
           keyType,
           pinned: t.sshHostKeys.includes(line),
@@ -347,7 +357,7 @@ export const targetsHandlers: RequestHandler[] = [
     asUser(request, (userId) => {
       const t = world().targets.find((x) => x.id === variables.targetId && visible(userId, x));
       if (!t) return refusal("NOT_FOUND", "target not found");
-      if (!isSiteAdmin(userId)) return noPins();
+      if (!canEdit(userId, t)) return noPin();
       if (!sshConnectionIdOf(t))
         return refusal("FAILED_PRECONDITION", "target has no SSH connection");
       const line = offeredKeyLine(t);
