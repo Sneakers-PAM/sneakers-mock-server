@@ -1,7 +1,6 @@
-# Package funding links in the lockfile, copied from the registry metadata.
-fqdn opencollective.com package-lock.json
-fqdn eslint.org package-lock.json
-fqdn tidelift.com package-lock.json
-fqdn paypal.me package-lock.json
-fqdn www.patreon.com package-lock.json
-fqdn feross.org package-lock.json
+fqdn opencollective.com package-lock.json  # package funding link in the lockfile
+fqdn eslint.org package-lock.json  # package funding link in the lockfile
+fqdn tidelift.com package-lock.json  # package funding link in the lockfile
+fqdn paypal.me package-lock.json  # package funding link in the lockfile
+fqdn www.patreon.com package-lock.json  # package funding link in the lockfile
+fqdn feross.org package-lock.json  # package funding link in the lockfile
