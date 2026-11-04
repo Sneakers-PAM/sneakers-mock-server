@@ -6,7 +6,13 @@
  */
 
 export type FieldKind =
-  "boolean" | "file" | "multiline" | "password" | "select" | "sensitive" | "text";
+  | "boolean"
+  | "file"
+  | "multiline"
+  | "password"
+  | "select"
+  | "sensitive"
+  | "text";
 
 export interface MockComment {
   authorName: string;

@@ -75,5 +75,6 @@ Follow the logging rules in `CLAUDE.md`. In short:
   didn't select, unless a web test pins the exact answer. Then branch in `handlers/ios.ts`.
 - Web's and iOS's operations share names. MSW matches by name, so `handlers/ios.ts` runs first and
   returns nothing to pass a request on to web's handler.
-- Prettier never touches `schema/`, `ios-operations/`, `src/generated/` or the governance files:
-  the copies must stay byte-exact. See `.prettierignore`.
+- oxfmt never touches `schema/`, `ios-operations/` or the governance files: the copies must stay
+  byte-exact. See `ignorePatterns` in `oxfmt.config.ts`. `src/generated/` is formatted by
+  `scripts/schema-generate.sh` when it is regenerated.

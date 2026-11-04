@@ -18,4 +18,4 @@ fs.writeFileSync(
     ";\n",
 );
 '
-npx prettier --write --log-level warn src/generated
+npx oxfmt src/generated

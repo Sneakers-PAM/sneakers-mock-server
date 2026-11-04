@@ -124,8 +124,8 @@ people, and the access token works as `Authorization: Bearer` on every route.
 ```bash
 npm install --ignore-scripts
 npm test             # vitest: the mock, its controls and the contract tests
-npm run lint         # eslint
-npm run format:check # prettier
+npm run lint         # oxlint
+npm run format:check # oxfmt
 npm run typecheck
 ```
 
