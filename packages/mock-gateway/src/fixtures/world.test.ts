@@ -12,6 +12,9 @@ withMockGateway();
 const world = () => mockState.world;
 const ids = (rows: { id: string }[]) => new Set(rows.map((r) => r.id));
 
+const expiryOf = (s: { expiresAt?: string }) =>
+  s.expiresAt ? Date.parse(s.expiresAt) : Number.NaN;
+
 describe("the mock world", () => {
   it("is invented: every id starts with mock- and no address or host is real", () => {
     const w = world();
@@ -75,9 +78,8 @@ describe("the mock world", () => {
     const now = Date.now();
     const soon = now + 30 * 86_400_000;
     const live = world().secrets.filter((s) => !s.retired);
-    const at = (s: { expiresAt?: string }) => (s.expiresAt ? Date.parse(s.expiresAt) : Number.NaN);
-    expect(live.some((s) => at(s) < now)).toBe(true);
-    expect(live.some((s) => at(s) >= now && at(s) <= soon)).toBe(true);
+    expect(live.some((s) => expiryOf(s) < now)).toBe(true);
+    expect(live.some((s) => expiryOf(s) >= now && expiryOf(s) <= soon)).toBe(true);
     expect(live.some((s) => s.lastHeartbeatResult === "failed")).toBe(true);
     expect(world().secrets.some((s) => s.retired)).toBe(true);
   });

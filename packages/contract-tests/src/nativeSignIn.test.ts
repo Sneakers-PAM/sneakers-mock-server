@@ -117,7 +117,7 @@ describe("native sign-in, as gateway#143 proposes it", () => {
   });
 
   it.each([
-    // eslint-disable-next-line unicorn/prefer-https -- plain http off loopback is the case
+    // eslint-disable-next-line unicorn-js/prefer-https -- plain http off loopback is the case
     "http://example.org/callback",
     "myapp:/callback",
     "com.example.app://host/callback",

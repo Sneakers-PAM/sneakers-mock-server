@@ -1,0 +1,54 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "extends": [
+    "./node_modules/@bugs5382/node-oxlint-config/configs/base.json",
+    "./node_modules/@bugs5382/node-oxlint-config/configs/testing.json"
+  ],
+  "ignorePatterns": [
+    "dist/**",
+    "coverage/**",
+    "**/src/generated/**",
+    "packages/contract-tests/ios-operations/**",
+    "packages/gateway-client/schema/**"
+  ],
+  "rules": {
+    "unicorn/no-nested-ternary": "off",
+    "unicorn/no-null": "off",
+    "unicorn/filename-case": [
+      "error",
+      {
+        "cases": {
+          "camelCase": true,
+          "kebabCase": true
+        }
+      }
+    ],
+    "unicorn-js/prevent-abbreviations": [
+      "error",
+      {
+        "allowList": {
+          "env": true,
+          "ImportMetaEnv": true,
+          "Props": true,
+          "props": true,
+          "ref": true,
+          "Ref": true
+        }
+      }
+    ]
+  },
+  "overrides": [
+    {
+      "files": ["**/*.test.ts"],
+      "rules": {
+        "unicorn/no-await-expression-member": "off"
+      }
+    },
+    {
+      "files": ["packages/gateway-client/codegen.ts"],
+      "rules": {
+        "import/no-default-export": "off"
+      }
+    }
+  ]
+}
