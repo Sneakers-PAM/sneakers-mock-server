@@ -6,8 +6,10 @@ import {
   TargetsListDocument,
   TargetsOpenSshSessionDocument,
   TargetsPinHostKeyDocument,
+  TargetsPinTlsCertificateDocument,
   TargetsSaveDocument,
   TargetsScanHostKeyDocument,
+  TargetsScanTlsCertificateDocument,
   TargetsTerminalDocument,
   TargetsTerminalFieldsDocument,
 } from "@sneakers-pam/gateway-client";
@@ -24,6 +26,7 @@ import { isSiteAdmin, refusal } from "#mock/admin/refuse";
 import { api, asUser } from "#mock/handlers/graphql";
 import { fingerprintOf, offeredKeyLine, parseKeyLine } from "#mock/handlers/hostKeyScan";
 import { canRead, canSee, secretById, targetIdsOf } from "#mock/handlers/staff/access";
+import { normalizeFingerprint, offeredChain } from "#mock/handlers/tlsCertificateScan";
 import { mockState, newToken } from "#mock/state";
 
 /*
@@ -73,6 +76,7 @@ const targetView = (t: MockTarget) => ({
   realm: t.realm ?? null,
   secretCount: world().secrets.filter((s) => !s.retired && targetIdsOf(s).includes(t.id)).length,
   sshHostKeys: t.sshHostKeys,
+  tlsCertPins: t.tlsCertPins ?? [],
 });
 
 /** The save input's connections, normalized from the new list or the legacy single
@@ -112,6 +116,46 @@ const connectionView = (c: MockConnection) => ({
 const blank = (v: null | string | undefined) => (v?.trim() ? v.trim() : undefined);
 
 const noEdit = () => refusal("PERMISSION_DENIED", "not permitted to edit this target");
+/** A TLS pin is a person's, by the same rule as a host key: a personal target's owner, or a site
+ * admin for any target. A token can't change pins (it can't sign in as a person here either). */
+const noTlsPin = (t: MockTarget) =>
+  t.ownerUserId
+    ? refusal(
+        "PERMISSION_DENIED",
+        "TLS certificates on a personal target are pinned by its owner.",
+        "TLS_CERT_PIN_NOT_OWNER",
+      )
+    : refusal(
+        "PERMISSION_DENIED",
+        "TLS certificates on a shared target are pinned by a site admin.",
+        "TLS_CERT_PIN_NOT_ADMIN",
+      );
+
+/** The connection a TLS scan reads: the default one if it uses TLS, else the first that does. SSH
+ * never counts. */
+const tlsConnectionOf = (t: MockTarget) => {
+  const ids = [defaultConnectionId(t), ...connectionsOf(t).map((c) => c.connectionId)];
+  for (const id of ids) {
+    const c = world().connections.find((x) => x.id === id);
+    if (c?.useTls && c.protocol !== "ssh") return c;
+  }
+  return null;
+};
+
+/** Why a person can't scan or pin this target's TLS certificate, or null when they can. */
+const tlsProblem = (userId: string, t: MockTarget): never | null => {
+  if (!canEdit(userId, t)) return noTlsPin(t);
+  if (!tlsConnectionOf(t))
+    return refusal(
+      "FAILED_PRECONDITION",
+      "target has no TLS connection",
+      "TARGET_NO_TLS_CONNECTION",
+    );
+  if (t.connectorUnavailable)
+    return refusal("UNAVAILABLE", "the connector is not reachable", "CONNECTOR_UNAVAILABLE");
+  return null;
+};
+
 const noPin = () =>
   refusal(
     "PERMISSION_DENIED",
@@ -191,6 +235,61 @@ const sessionProblem = (userId: string, s: MockSecret, wantedTargetId: string): 
 };
 
 export const targetsHandlers: RequestHandler[] = [
+  api.query(TargetsScanTlsCertificateDocument, ({ request, variables }) =>
+    asUser(request, (userId) => {
+      const t = world().targets.find((x) => x.id === variables.targetId && visible(userId, x));
+      if (!t) return refusal("NOT_FOUND", "target not found");
+      const problem = tlsProblem(userId, t);
+      if (problem) return problem;
+      const connection = tlsConnectionOf(t)!;
+      const pins = t.tlsCertPins ?? [];
+      return ok({
+        scanTargetTlsCertificate: {
+          address: addressOf(t.hostname, connection.port ?? 443),
+          chain: offeredChain(t).map((c) => ({ ...c, pinned: pins.includes(c.fingerprint) })),
+          hostNameMatches: true,
+          serverName: t.hostname,
+          systemTrustDetail: "certificate signed by unknown authority",
+          systemTrusted: false,
+          targetId: t.id,
+          tlsVersion: "TLS 1.3",
+        },
+      });
+    }),
+  ),
+
+  api.mutation(TargetsPinTlsCertificateDocument, ({ request, variables }) =>
+    asUser(request, (userId) => {
+      const t = world().targets.find((x) => x.id === variables.targetId && visible(userId, x));
+      if (!t) return refusal("NOT_FOUND", "target not found");
+      const problem = tlsProblem(userId, t);
+      if (problem) return problem;
+      const fingerprint = normalizeFingerprint(variables.fingerprint);
+      if (!fingerprint)
+        return refusal(
+          "INVALID_ARGUMENT",
+          "the fingerprint is not a SHA-256 fingerprint",
+          "TLS_CERT_FINGERPRINT_INVALID",
+        );
+      const offered = offeredChain(t).find((c) => c.fingerprint === fingerprint);
+      if (!offered)
+        return refusal(
+          "FAILED_PRECONDITION",
+          "the target no longer sends that certificate",
+          "TLS_CERT_CHANGED",
+        );
+      if (!offered.pinnable)
+        return refusal(
+          "FAILED_PRECONDITION",
+          "pinning that certificate alone would not let the connector trust the target",
+          "TLS_CERT_NOT_PINNABLE",
+        );
+      const pins = t.tlsCertPins ?? [];
+      if (!pins.includes(fingerprint)) t.tlsCertPins = [...pins, fingerprint];
+      return ok({ pinTargetTlsCertificate: targetView(t) });
+    }),
+  ),
+
   api.query(TargetsListDocument, ({ request }) =>
     asUser(request, (userId) =>
       ok({
@@ -231,6 +330,7 @@ export const targetsHandlers: RequestHandler[] = [
         ownerUserId: existing ? existing.ownerUserId : admin ? undefined : userId,
         realm: blank(input.realm),
         sshHostKeys: pins,
+        tlsCertPins: existing?.tlsCertPins,
       };
       world().targets = existing
         ? world().targets.map((t) => (t.id === saved.id ? saved : t))
