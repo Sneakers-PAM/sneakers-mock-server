@@ -475,6 +475,10 @@ type Target {
   # per entry ("ssh-ed25519 AAAA... comment"). Empty = not pinned: SSH
   # sessions to it are refused.
   sshHostKeys: [String!]!
+  # SHA-256 fingerprints (64 lowercase hex digits) of the TLS certificates the
+  # connector trusts for this target (LDAPS and other TLS connections). Empty =
+  # no pin: the connector checks the certificate against the system roots.
+  tlsCertPins: [String!]!
 }
 # The SSH host key a target offers, read by the SSH broker during the
 # handshake without authenticating. Nothing is pinned by reading it.
@@ -518,6 +522,48 @@ input TargetInput {
   # The full pin list (a site admin, or a personal target's owner, may change
   # it). Omit to keep the target's current pins; [] clears them.
   sshHostKeys: [String!]
+}
+
+# One certificate a target sent during the TLS handshake, read by the connector
+# without sending any application data. Nothing is pinned by reading it.
+type TargetTlsCertificate {
+  # The full subject, e.g. CN=dc01.example.org,O=Example Org.
+  subject: String!
+  commonName: String!
+  # The subject alternative names.
+  dnsNames: [String!]!
+  ipAddresses: [String!]!
+  issuer: String!
+  notBefore: String
+  notAfter: String
+  # SHA-256 of the certificate, 64 lowercase hex digits.
+  # pinTargetTlsCertificate takes exactly this value.
+  fingerprint: String!
+  serialNumber: String!
+  isCa: Boolean!
+  selfSigned: Boolean!
+  # Whether pinning this certificate alone would let the connector trust the
+  # target now. Offer only these.
+  pinnable: Boolean!
+  # Whether the target already pins this certificate.
+  pinned: Boolean!
+}
+# The certificate chain a target offers, in the order it sent them: its own
+# certificate first.
+type TargetTlsCertificateScan {
+  targetId: ID!
+  # The ip:port the connector connected to.
+  address: String!
+  # The host name the certificate was checked against.
+  serverName: String!
+  tlsVersion: String!
+  chain: [TargetTlsCertificate!]!
+  # Whether the chain already verifies against the connector's system roots, so
+  # the target works without a pin.
+  systemTrusted: Boolean!
+  systemTrustDetail: String
+  # Whether the target's own certificate covers serverName.
+  hostNameMatches: Boolean!
 }
 
 enum PwStartClass { any letter digit symbol }
@@ -995,6 +1041,11 @@ type Query {
   # change a target's pins); the broker rate-limits scans per user. Audited by
   # the broker as hostkey.scan.
   scanTargetHostKey(targetId: ID!): TargetHostKeyScan!
+  # Reads the TLS certificate chain the target's TLS connection offers (the
+  # default connection when it uses TLS, otherwise its first TLS one), through
+  # the connector, for a person to check before pinning one with
+  # pinTargetTlsCertificate. The same people as scanTargetHostKey. Pins nothing.
+  scanTargetTlsCertificate(targetId: ID!): TargetTlsCertificateScan!
   passwordPolicies: [PasswordPolicy!]!
   securitySettings: SecuritySettings!
   secretTypes: [SecretType!]!
@@ -1094,6 +1145,10 @@ type Query {
   # web banners. present is false on a plain Kubernetes install, and every
   # other field is then null or false.
   appliance: Appliance!
+
+  # The signed-in person's own one-time share links and where each stands. The URL
+  # isn't kept, so it isn't here; it's only returned by createShareLink.
+  shareLinks: [ShareLink!]!
 }
 
 type Appliance {
@@ -1228,6 +1283,12 @@ type Mutation {
   # A different key is refused with HOST_KEY_CHANGED and nothing is pinned.
   # The same people as scanTargetHostKey. Adds to the target's existing pins.
   pinTargetHostKey(targetId: ID!, fingerprint: String!): Target!
+  # Pins a TLS certificate by its SHA-256 fingerprint, only if the target still
+  # offers exactly it in a fresh scan (otherwise TLS_CERT_CHANGED), and only if
+  # pinning it alone would work (otherwise TLS_CERT_NOT_PINNABLE). Accepts the
+  # fingerprint with or without a sha256: prefix and colons, in any case. Adds
+  # to the target's existing pins. The same people as scanTargetTlsCertificate.
+  pinTargetTlsCertificate(targetId: ID!, fingerprint: String!): Target!
 
   savePasswordPolicy(input: PasswordPolicyInput!): PasswordPolicy!
   deletePasswordPolicy(id: ID!): Boolean!
@@ -1472,6 +1533,27 @@ type Mutation {
   # Removes a service account's OIDC client linkage; its opaque API-token
   # path is unaffected. Site-admin-only.
   unlinkOidcClient(serviceAccountId: ID!): ServiceAccount!
+
+  # One-time share links for a secret field, for someone without an account. A person
+  # only. Creating one follows the normal reveal rules: access, the step-up, and the
+  # owner's approval (the link then waits, state awaiting_approval, and its owner
+  # decides it like any other use). The URL is returned once; the value is shown once,
+  # from a page that a link preview can't trigger. ttlSeconds is 60 to 604800, 86400
+  # when absent.
+  createShareLink(secretId: ID!, fieldKey: String!, ttlSeconds: Int): ShareLink!
+  # Ends a link that hasn't been opened: its creator or a site admin.
+  revokeShareLink(id: ID!): Boolean!
+  # What a phone app reports about itself, for the audit log. Both need a signed-in
+  # person (never a token), carry no secret value, and are refused with
+  # SECRET_NOT_FOUND for a secret that is unknown or that the caller can't see.
+  #
+  # Records a screenshot or screen recording taken while a secret is revealed or a
+  # sensitive screen is open, as client.screenshot or client.screen_recording.
+  # Give the secret or the screen name, not both.
+  reportScreenCapture(input: ScreenCaptureInput!): Boolean!
+  # Records that a secret was opened by scanning its QR label, as secret.qr_scan.
+  # Call it after the normal open succeeds; the open itself is unchanged.
+  recordSecretScan(input: SecretScanInput!): Boolean!
 }
 
 # Live push channel over WebSocket (graphql-ws). Every subscription is
@@ -1483,4 +1565,38 @@ type Subscription {
   # dashboard's poll while the socket is up. Scoped by the same GetSecretStats
   # over the actor's readable secrets as the secretStats query.
   secretStats: SecretStats!
+}
+
+type ShareLink {
+  id: ID!
+  # Only on the link just created; null in the list.
+  url: String
+  secretId: ID!
+  fieldKey: String!
+  expiresAtUnix: Int!
+  # awaiting_approval, ready, opened, expired or unknown.
+  state: String!
+}
+
+enum ScreenCaptureKind {
+  SCREENSHOT
+  SCREEN_RECORDING
+}
+
+# What the app saw. clientKind is a short token such as ios or android; device is
+# a name for the device (at most 80 characters). Both are as the app reports them.
+input ScreenCaptureInput {
+  kind: ScreenCaptureKind!
+  secretId: ID
+  # A screen name (letters, digits, dot, dash, underscore, space; at most 64) for a
+  # sensitive screen that isn't one secret.
+  screen: String
+  clientKind: String!
+  device: String
+}
+
+input SecretScanInput {
+  secretId: ID!
+  clientKind: String!
+  device: String
 }

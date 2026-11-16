@@ -18,6 +18,7 @@ fragment TargetsTargetFields on Target {
   secretCount
   ownerUserId
   sshHostKeys
+  tlsCertPins
 }
 
 fragment TargetsConnectionFields on Connection {
@@ -114,5 +115,42 @@ mutation TargetsPinHostKey($targetId: ID!, $fingerprint: String!) {
   pinTargetHostKey(targetId: $targetId, fingerprint: $fingerprint) {
     id
     sshHostKeys
+  }
+}
+
+# Trust-on-first-use pinning of a target's TLS certificate (the same pair as the host key). A scan
+# never pins; only a confirmed pinTargetTlsCertificate call does, and only for a fingerprint the
+# target still sends.
+query TargetsScanTlsCertificate($targetId: ID!) {
+  scanTargetTlsCertificate(targetId: $targetId) {
+    targetId
+    address
+    serverName
+    tlsVersion
+    systemTrusted
+    systemTrustDetail
+    hostNameMatches
+    chain {
+      subject
+      commonName
+      dnsNames
+      ipAddresses
+      issuer
+      notBefore
+      notAfter
+      fingerprint
+      serialNumber
+      isCa
+      selfSigned
+      pinnable
+      pinned
+    }
+  }
+}
+
+mutation TargetsPinTlsCertificate($targetId: ID!, $fingerprint: String!) {
+  pinTargetTlsCertificate(targetId: $targetId, fingerprint: $fingerprint) {
+    id
+    tlsCertPins
   }
 }

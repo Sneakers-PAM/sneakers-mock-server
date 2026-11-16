@@ -205,17 +205,21 @@ export interface MockTarget {
   /** Unset means a one-item list built from connectionId, for a target saved before this
    * existed. */
   connections?: MockTargetConnection[];
+  /** The key a fresh scan reports the host offers; unset derives a stable one from the id. */
+  /** Set to make the connector unreachable, so a TLS scan or pin answers CONNECTOR_UNAVAILABLE. */
+  connectorUnavailable?: boolean;
   description?: string;
   domain?: string;
   hostname: string;
   id: string;
   kind?: string;
   name: string;
-  /** The key a fresh scan reports the host offers; unset derives a stable one from the id. */
   offeredHostKey?: string;
   ownerUserId?: string;
   realm?: string;
   sshHostKeys: string[];
+  /** SHA-256 fingerprints (64 lowercase hex digits) of the TLS certificates pinned for this target. */
+  tlsCertPins?: string[];
 }
 
 export interface MockTargetConnection {
