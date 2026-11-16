@@ -20,6 +20,8 @@ export interface MockPolicy extends Omit<PasswordPolicyInput, "id"> {
 export interface MockSecuritySettings {
   allowApiForSensitive: boolean;
   defaultPasswordPolicyId: string;
+  /** MCP tools switched off, in the order an admin gave them; empty means every tool is on. */
+  disabledMcpTools: string[];
   /** The gateway's MFA_MAX_AGE in seconds: read-only, set where the services run. */
   mfaMaxAgeSeconds: number;
   requestHistoryRetentionDays: number;
@@ -77,6 +79,7 @@ const policies = (): MockPolicy[] => [
 const security = (): MockSecuritySettings => ({
   allowApiForSensitive: false,
   defaultPasswordPolicyId: "mock-policy-strong",
+  disabledMcpTools: [],
   mfaMaxAgeSeconds: 1800,
   requestHistoryRetentionDays: 90,
   requireMfaForReveal: false,
@@ -110,6 +113,29 @@ const ok = (data: unknown): never => HttpResponse.json({ data } as never) as nev
 
 const asAdmin = <T>(request: Request, run: () => T): T =>
   asUser(request, (actorId) => (isSiteAdmin(actorId) ? run() : (notSiteAdmin() as T)));
+
+/** What the gateway keeps of the MCP tool names an admin sends: at most 100 names of at most 64
+ * characters, no control characters. */
+const MAX_MCP_TOOLS = 100;
+const MAX_MCP_TOOL_NAME = 64;
+
+/** The list the vault stores for the names sent: trimmed, blanks and repeats dropped, first-seen
+ * order kept; or why it is refused. The gateway doesn't check names against the MCP server's tool
+ * list, so neither does the mock. */
+const cleanMcpTools = (names: string[]): { problem: string } | { tools: string[] } => {
+  const tools: string[] = [];
+  for (const raw of names) {
+    const name = raw.trim();
+    if (!name) continue;
+    if ([...name].length > MAX_MCP_TOOL_NAME)
+      return { problem: `an MCP tool name is longer than ${MAX_MCP_TOOL_NAME} characters` };
+    if (/[\u0000-\u001F\u007F-\u009F]/.test(name))
+      return { problem: "an MCP tool name has a control character" };
+    if (!tools.includes(name)) tools.push(name);
+  }
+  if (tools.length > MAX_MCP_TOOLS) return { problem: `more than ${MAX_MCP_TOOLS} MCP tool names` };
+  return { tools };
+};
 
 /** The vault's own checks on a policy: a sane length range and at least one usable class. */
 const policyProblem = (p: PasswordPolicyInput): null | string => {
@@ -188,6 +214,12 @@ export const settingsHandlers = [
         !settings.policies.some((p) => p.id === input.defaultPasswordPolicyId)
       )
         return refusal("NOT_FOUND", "policy not found");
+      // A list replaces the stored one; omitted or null keeps it (the filter above dropped it).
+      if (input.disabledMcpTools !== undefined) {
+        const cleaned = cleanMcpTools(input.disabledMcpTools);
+        if ("problem" in cleaned) return refusal("INVALID_ARGUMENT", cleaned.problem);
+        input.disabledMcpTools = cleaned.tools;
+      }
       settings.security = { ...settings.security, ...input };
       return ok({ updateSecuritySettings: settings.security });
     }),
