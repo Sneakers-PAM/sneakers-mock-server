@@ -52,6 +52,7 @@ import {
   liveBreakGlass,
   recordBreakGlassReveal,
 } from "#mock/handlers/staff/breakGlass";
+import { defaultConnectionId } from "#mock/handlers/staff/targets";
 import { typeView } from "#mock/handlers/staff/typeView";
 import { freshMfa, stepUpRequired } from "#mock/handlers/stepUp";
 import { mockState, onMockReset } from "#mock/state";
@@ -246,7 +247,12 @@ export const secretHandlers: RequestHandler[] = [
           })),
         secret: s && canSee(userId, s) ? view(s, userId) : null,
         secretTypes: world().secretTypes.map((t) => typeView(t)),
-        targets: world().targets.map(({ hostname, id, name }) => ({ hostname, id, name })),
+        targets: world().targets.map((t) => ({
+          connectionId: defaultConnectionId(t),
+          hostname: t.hostname,
+          id: t.id,
+          name: t.name,
+        })),
       });
     }),
   ),

@@ -57,7 +57,7 @@ const connectionsOf = (t: MockTarget): MockTargetConnection[] =>
     ? t.connections
     : [{ connectionId: t.connectionId, isDefault: true }];
 
-const defaultConnectionId = (t: MockTarget): string =>
+export const defaultConnectionId = (t: MockTarget): string =>
   connectionsOf(t).find((c) => c.isDefault)?.connectionId ?? t.connectionId;
 
 const targetView = (t: MockTarget) => ({
