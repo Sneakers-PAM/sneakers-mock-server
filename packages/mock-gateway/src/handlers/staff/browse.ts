@@ -25,6 +25,7 @@ import { userById } from "#mock/fixtures/users";
 import { api, asUser } from "#mock/handlers/graphql";
 import { folderChain, hidden, ownsFolder, resolve } from "#mock/handlers/raci";
 import { canRead as canReadSecret, lastPositionIn } from "#mock/handlers/staff/access";
+import { recordMove } from "#mock/handlers/staff/moves";
 import { typeView } from "#mock/handlers/staff/typeView";
 import { mockState, newToken } from "#mock/state";
 
@@ -423,7 +424,7 @@ export const browseHandlers = [
       if (destinationOwner && personalOwner(from) !== destinationOwner && !isSiteAdmin(userId))
         return notAdmin();
       const position = lastPositionIn(destination.id);
-      s.folderId = destination.id;
+      if (destination.id !== s.folderId) recordMove(s, userId, destination.id);
       s.position = position;
       return ok({ updateSecret: { folderId: s.folderId, id: s.id } });
     }),

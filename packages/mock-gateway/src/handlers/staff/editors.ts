@@ -27,6 +27,7 @@ import {
   lastPositionIn,
   secretById,
 } from "#mock/handlers/staff/access";
+import { recordMove } from "#mock/handlers/staff/moves";
 import { typeView } from "#mock/handlers/staff/typeView";
 import { mockState, newToken } from "#mock/state";
 
@@ -341,7 +342,7 @@ export const editorsHandlers: RequestHandler[] = [
       );
       if (input.name?.trim()) s.name = input.name.trim();
       if (input.folderId && input.folderId !== s.folderId) {
-        s.folderId = input.folderId;
+        recordMove(s, userId, input.folderId);
         s.position = lastPositionIn(input.folderId);
       }
       // The vault takes the target and expiry as given, so the editor always sends both.
