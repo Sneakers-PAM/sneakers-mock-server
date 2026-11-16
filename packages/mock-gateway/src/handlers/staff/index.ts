@@ -5,6 +5,7 @@ import { browseHandlers } from "#mock/handlers/staff/browse";
 import { changeTypeHandlers } from "#mock/handlers/staff/changeType";
 import { dashboardHandlers } from "#mock/handlers/staff/dashboard";
 import { editorsHandlers } from "#mock/handlers/staff/editors";
+import { movesHandlers } from "#mock/handlers/staff/moves";
 import { requestsHandlers } from "#mock/handlers/staff/requests";
 import { secretHandlers } from "#mock/handlers/staff/secret";
 import { settingsHandlers } from "#mock/handlers/staff/settings";
@@ -17,6 +18,7 @@ export const staffHandlers = [
   ...browseHandlers,
   ...breakGlassHandlers,
   ...secretHandlers,
+  ...movesHandlers,
   ...requestsHandlers,
   ...agentsHandlers,
   ...agentRunsHandlers,

@@ -2374,6 +2374,20 @@ export type SecretVersionsQuery = {
   }>;
 };
 
+export type SecretMovesQueryVariables = Exact<{
+  secretId: string;
+}>;
+
+export type SecretMovesQuery = {
+  secretMoves: Array<{
+    movedBy: string;
+    movedByName: string;
+    movedAt: string;
+    fromFolderId: string;
+    toFolderId: string;
+  }>;
+};
+
 export type SecretRevealMutationVariables = Exact<{
   id: string;
   fieldKey: string;
@@ -5835,6 +5849,17 @@ export const SecretVersionsDocument = new TypedDocumentString(`
   }
 }
     `) as unknown as TypedDocumentString<SecretVersionsQuery, SecretVersionsQueryVariables>;
+export const SecretMovesDocument = new TypedDocumentString(`
+    query SecretMoves($secretId: ID!) {
+  secretMoves(secretId: $secretId) {
+    movedBy
+    movedByName
+    movedAt
+    fromFolderId
+    toFolderId
+  }
+}
+    `) as unknown as TypedDocumentString<SecretMovesQuery, SecretMovesQueryVariables>;
 export const SecretRevealDocument = new TypedDocumentString(`
     mutation SecretReveal($id: ID!, $fieldKey: String!) {
   revealSecretField(id: $id, fieldKey: $fieldKey)
