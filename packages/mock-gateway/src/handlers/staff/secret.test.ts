@@ -73,6 +73,9 @@ describe("secret detail in the mock gateway", () => {
     expect(d.targets.find((t) => t.id === "mock-target-dc1")?.hostname).toBe(
       "dc1.corp.example.org",
     );
+    // The secret page tells a target with a connection from one without (web#108), so the
+    // detail answer carries each target's default connection id, as the targets query does.
+    expect(d.targets.find((t) => t.id === "mock-target-dc1")?.connectionId).toBe("mock-conn-ldaps");
     expect(JSON.stringify(d)).not.toContain("mock-Lace-Up");
   });
 
